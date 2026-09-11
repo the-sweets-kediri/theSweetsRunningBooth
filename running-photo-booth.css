@@ -68,7 +68,7 @@ button:focus-visible, a:focus-visible { outline: 4px solid var(--pink-200); outl
   width: min(270px, 62vw);
   height: auto;
   margin: 0 auto;
-  filter: brightness(.80) saturate(1.10) contrast(1.02);
+  filter: none;
 }
 .brand-logo--small { width: min(190px, 42vw); }
 
