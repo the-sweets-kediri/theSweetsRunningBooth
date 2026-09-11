@@ -255,7 +255,6 @@ button:focus-visible, a:focus-visible { outline: 4px solid var(--pink-200); outl
     <section id="startScreen" class="screen screen--start active" data-glean-id="start-screen">
       <div class="start-card" data-glean-id="start-card">
         <img class="brand-logo" src="logo.png" alt="The Sweets" data-glean-id="start-logo">
-        <div class="event-chip" data-glean-id="event-chip">Running Event Photo Booth</div>
         <h1 class="hero-title" data-glean-id="hero-title">Photo Booth Running Event</h1>
         <p class="hero-subtitle" data-glean-id="hero-subtitle">Sweet moments in motion</p>
         <p class="event-chip" data-glean-id="event-details">Elite Fitness Kediri&nbsp; • &nbsp;13/09/26</p>
@@ -267,7 +266,7 @@ button:focus-visible, a:focus-visible { outline: 4px solid var(--pink-200); outl
           <li><span class="instruction-icon" aria-hidden="true">2m</span><span>Per sesi maksimal 2 menit</span></li>
         </ul>
         <button id="startBtn" class="primary-button" type="button" data-glean-id="start-button">Lanjut</button>
-        <p class="strip-details" data-glean-id="social-handle">@thesweetkediri</p>
+        <p class="strip-details" data-glean-id="social-handle">@thesweetskediri</p>
       </div>
     </section>
 
@@ -275,7 +274,7 @@ button:focus-visible, a:focus-visible { outline: 4px solid var(--pink-200); outl
       <div class="instruction-card" data-glean-id="instruction-card">
         <img class="brand-logo brand-logo--small" src="logo.png" alt="The Sweets" data-glean-id="instruction-logo">
         <h2 class="section-title" data-glean-id="instruction-title">Cara Foto</h2>
-        <p class="instruction-copy" data-glean-id="instruction-copy">Kamera akan mulai otomatis. Setiap foto memiliki countdown 7 detik. Siapkan pose terbaikmu dan nikmati momen larinya.</p>
+        <p class="instruction-copy" data-glean-id="instruction-copy">Kamera akan mulai otomatis. Setiap foto memiliki countdown 7 detik. Siapkan pose terbaikmu.</p>
         <div class="preview-frame" data-glean-id="instruction-preview-frame"><video id="instructionPreview" autoplay playsinline muted aria-label="Camera preview"></video></div>
         <button id="beginSessionBtn" class="primary-button" type="button" data-glean-id="begin-session-button">Mulai Sesi</button>
       </div>
@@ -303,7 +302,7 @@ button:focus-visible, a:focus-visible { outline: 4px solid var(--pink-200); outl
             <div id="photos" data-glean-id="captured-photos"></div>
             <footer class="strip-footer" data-glean-id="strip-footer">
               <p class="strip-slogan">Sweet moments in motion</p>
-              <p class="strip-details">@thesweetkediri<br>Elite Fitness Kediri<br>13/09/26</p>
+              <p class="strip-details">Running event at<br>Elite Fitness Kediri<br>13/09/26<br>@thesweestkediri</p>
             </footer>
           </aside>
         </div>
@@ -691,7 +690,7 @@ async function renderStripBlob() {
   y += 74
   ctx.fillStyle = "#7d2855"
   ctx.font = "700 32px Trebuchet MS, sans-serif"
-  ctx.fillText("@thesweetkediri", canvas.width / 2, y)
+  ctx.fillText("@thesweetskediri", canvas.width / 2, y)
   y += 48
   ctx.font = "700 28px Trebuchet MS, sans-serif"
   ctx.fillText(`${EVENT_LOCATION} • ${EVENT_DATE} | ${currentCaptureTime}`, canvas.width / 2, y)
