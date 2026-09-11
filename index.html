@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#b34b7a">
+  <title>The Sweets Running Photo Booth</title>
+  <!-- This HTML is self-contained for preview. Companion CSS/JS files are provided for modular deployment. -->
+  <style>
+/* The Sweets Running Photo Booth */
+:root {
+  --pink-50: #fff4fa;
+  --pink-100: #ffe4f1;
+  --pink-200: #ffc5df;
+  --pink-400: #f46a9b;
+  --pink-500: #e94d86;
+  --berry: #b34b7a;
+  --berry-deep: #7d2855;
+  --ink: #351a2b;
+  --muted-ink: #6d4b5d;
+  --panel: rgba(255, 247, 251, 0.9);
+  --panel-strong: rgba(255, 251, 253, 0.96);
+  --shadow: 0 22px 60px rgba(78, 17, 52, 0.25);
+  --soft-shadow: 0 10px 28px rgba(78, 17, 52, 0.18);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  min-height: 100vh;
+  overflow-x: hidden;
+  color: var(--ink);
+  font-family: "Trebuchet MS", "Avenir Next", system-ui, sans-serif;
+  background: var(--pink-50);
+}
+button { font: inherit; }
+button:focus-visible, a:focus-visible { outline: 4px solid var(--pink-200); outline-offset: 4px; }
+
+.app-shell { min-height: 100vh; position: relative; }
+.screen {
+  display: none;
+  min-height: 100vh;
+  padding: clamp(18px, 3vw, 36px);
+  position: relative;
+  isolation: isolate;
+}
+.screen.active { display: flex; }
+.screen--start {
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(rgba(58, 9, 39, 0.04), rgba(58, 9, 39, 0.08)), url("running-event-main-background.png") center / cover no-repeat;
+}
+.screen--instruction, .screen--qr {
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--pink-100), var(--pink-50));
+}
+.screen--camera {
+  display: none;
+  align-items: flex-start;
+  justify-content: center;
+  background: linear-gradient(135deg, #ffd8e9, #ff99c2 46%, #f7d6e7);
+}
+.screen--camera.active { display: block; }
+
+.screen--start::before, .screen--instruction::before, .screen--qr::before, .screen--camera::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background: radial-gradient(circle at 12% 10%, rgba(255,255,255,.7), transparent 28%), radial-gradient(circle at 90% 88%, rgba(255, 108, 165, .22), transparent 32%);
+}
+
+.brand-logo {
+  display: block;
+  width: min(270px, 62vw);
+  height: auto;
+  margin: 0 auto;
+  filter: brightness(.52) saturate(.86) contrast(1.10);
+}
+.brand-logo--small { width: min(190px, 42vw); }
+
+.start-card, .instruction-card, .qr-card {
+  width: min(760px, 100%);
+  padding: clamp(24px, 4vw, 48px);
+  text-align: center;
+  border: 1px solid rgba(255,255,255,.74);
+  border-radius: 30px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(10px);
+}
+.start-card { max-width: 880px; max-height: calc(100vh - 36px); overflow: auto; }
+#startBtn { min-width: min(440px, 82%); padding: 18px 38px; font-size: 22px; }
+.event-chip {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  margin: 18px 0 14px;
+  padding: 9px 15px;
+  border-radius: 999px;
+  color: var(--berry-deep);
+  background: rgba(255, 255, 255, .78);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.hero-title {
+  margin: 0;
+  color: var(--berry-deep);
+  font-size: clamp(28px, 5vw, 54px);
+  line-height: 1.02;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+}
+.hero-subtitle {
+  margin: 14px 0 20px;
+  color: var(--berry);
+  font-family: Georgia, serif;
+  font-size: clamp(20px, 3vw, 30px);
+  font-style: italic;
+}
+.intro-list {
+  display: grid;
+  gap: 8px;
+  max-width: 620px;
+  margin: 0 auto 26px;
+  padding: 0;
+  list-style: none;
+  color: var(--ink);
+  font-size: clamp(15px, 2vw, 19px);
+  line-height: 1.45;
+  text-align: left;
+}
+.intro-list li {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 11px 14px;
+  border-bottom: 1px dashed rgba(179, 75, 122, .34);
+}
+.instruction-icon { flex: 0 0 46px; display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; color: var(--pink-50); background: linear-gradient(135deg, var(--pink-400), var(--berry)); box-shadow: 0 6px 14px rgba(179,75,122,.22); font-size: 13px; font-weight: 900; letter-spacing: .02em; }
+
+.primary-button, .secondary-button, .danger-button {
+  border: 0;
+  border-radius: 999px;
+  padding: 14px 26px;
+  cursor: pointer;
+  font-weight: 900;
+  letter-spacing: .04em;
+  transition: transform .18s ease, box-shadow .18s ease, filter .18s ease;
+}
+.primary-button {
+  color: var(--pink-50);
+  background: linear-gradient(135deg, var(--pink-400), var(--berry));
+  box-shadow: 0 12px 28px rgba(179, 75, 122, .36);
+}
+.secondary-button { color: var(--berry-deep); background: rgba(255,255,255,.82); }
+.danger-button { color: var(--pink-50); background: rgba(111, 35, 79, .78); }
+.primary-button:hover, .secondary-button:hover, .danger-button:hover { transform: translateY(-2px); filter: brightness(1.05); }
+.primary-button:active, .secondary-button:active, .danger-button:active { transform: translateY(1px); }
+.button-row { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+
+.instruction-card { max-width: 700px; }
+.section-title { margin: 16px 0 10px; color: var(--berry-deep); font-size: clamp(28px, 4vw, 42px); }
+.instruction-copy { margin: 0 auto 18px; max-width: 590px; line-height: 1.6; }
+.preview-frame {
+  width: min(420px, 100%);
+  margin: 18px auto 24px;
+  padding: 9px;
+  border-radius: 20px;
+  background: rgba(255,255,255,.72);
+  box-shadow: var(--soft-shadow);
+}
+.preview-frame video { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; border-radius: 14px; transform: scaleX(-1); background: #21151d; }
+
+.camera-shell { width: min(1460px, 100%); margin: 0 auto; }
+.camera-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 18px; }
+.camera-header .brand-logo { margin: 0; width: min(190px, 35vw); }
+.event-meta { color: var(--berry-deep); font-size: 14px; font-weight: 800; text-align: right; }
+.camera-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start; }
+.camera-panel { min-width: 0; }
+.camera-frame { position: relative; padding: 12px; border-radius: 26px; background: rgba(255,255,255,.82); box-shadow: var(--shadow); }
+#video { display: block; width: 100%; max-height: 68vh; min-height: 360px; object-fit: cover; border-radius: 18px; transform: scaleX(-1); background: #1f1720; }
+#countdown { position: absolute; inset: 0; display: grid; place-items: center; color: var(--pink-50); font-size: clamp(84px, 14vw, 170px); font-weight: 900; text-shadow: 0 5px 22px rgba(0,0,0,.75); pointer-events: none; }
+.camera-controls { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 16px; }
+
+.photo-strip {
+  width: 100%;
+  max-width: 340px;
+  padding: 18px 16px 20px;
+  border-radius: 24px;
+  color: var(--ink);
+  background: linear-gradient(rgba(255, 246, 251, .54), rgba(255, 246, 251, .54)), url("running-event-strip-background.png") center / cover no-repeat;
+  box-shadow: var(--shadow);
+}
+.strip-brand { width: min(230px, 88%); margin: 0 auto 8px; filter: brightness(.52) saturate(.86) contrast(1.10); }
+.strip-title { margin: 0 0 4px; color: var(--berry-deep); font-size: 15px; font-weight: 900; letter-spacing: .11em; text-align: center; }
+.strip-meta { margin: 0 0 12px; color: var(--muted-ink); font-size: 11px; text-align: center; }
+#photos { display: grid; gap: 8px; }
+#photos img { display: block; width: 100%; border: 4px solid rgba(255,255,255,.94); border-radius: 13px; box-shadow: 0 5px 12px rgba(78,17,52,.16); }
+.photo-placeholder { display: grid; place-items: center; aspect-ratio: 16 / 9; border: 3px dashed rgba(179,75,122,.38); border-radius: 13px; color: var(--berry); background: rgba(255,255,255,.42); box-shadow: 0 5px 12px rgba(78,17,52,.10); }
+.photo-placeholder span { display: grid; place-items: center; width: 58px; height: 58px; border: 2px solid currentColor; border-radius: 50%; font-size: 14px; font-weight: 900; letter-spacing: .06em; }
+.strip-footer { margin-top: 12px; text-align: center; }
+.strip-slogan { margin: 0 0 5px; color: var(--berry); font-family: Georgia, serif; font-size: 17px; font-style: italic; }
+.strip-details { margin: 0; color: var(--berry-deep); font-size: 11px; font-weight: 800; line-height: 1.55; }
+
+.progress-edge { position: fixed; z-index: 20; background: var(--pink-500); box-shadow: 0 0 12px rgba(233,77,134,.75); transition: width .1s linear, height .1s linear, opacity .1s linear; }
+#progressTop, #progressBottom { left: 0; width: 0; height: 6px; }
+#progressTop { top: 0; } #progressBottom { right: 0; bottom: 0; left: auto; }
+#progressLeft, #progressRight { top: 0; width: 6px; height: 0; }
+#progressLeft { left: 0; top: auto; bottom: 0; } #progressRight { right: 0; }
+
+.qr-card { max-width: 520px; }
+#qrCanvas { display: block; width: 280px; height: 280px; max-width: 100%; margin: 18px auto; border-radius: 16px; background: #fff; }
+#qrStatus { min-height: 1.4em; color: var(--muted-ink); }
+#downloadLink { display: inline-block; color: var(--berry-deep); font-weight: 900; text-decoration: none; }
+.qr-hint { margin-bottom: 22px; color: var(--muted-ink); font-size: 13px; }
+
+@media (max-width: 980px) {
+  .camera-grid { grid-template-columns: 1fr; }
+  .photo-strip { max-width: 520px; margin: 0 auto; }
+  #video { min-height: 260px; }
+}
+@media (max-width: 580px) {
+  .screen { padding: 12px; }
+  .start-card, .instruction-card, .qr-card { padding: 22px 16px; border-radius: 22px; }
+  .camera-header { align-items: flex-start; }
+  .event-meta { font-size: 11px; }
+  .intro-list { font-size: 14px; }
+  .primary-button, .secondary-button, .danger-button { width: 100%; }
+}
+
+@media print {
+  body { background: var(--pink-50); print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .screen:not(.active), .camera-controls, .qr-hint, button { display: none !important; }
+  .screen.active { min-height: auto; padding: 0; }
+  .start-card, .instruction-card, .qr-card, .camera-frame, .photo-strip { box-shadow: none; }
+  .camera-grid { grid-template-columns: 1fr 340px; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@page { size: auto !important; }
+
+  </style>
+</head>
+<body>
+  <div class="app-shell" data-glean-id="running-photo-booth-app">
+    <div id="progressTop" class="progress-edge" data-glean-id="progress-top"></div>
+    <div id="progressRight" class="progress-edge" data-glean-id="progress-right"></div>
+    <div id="progressBottom" class="progress-edge" data-glean-id="progress-bottom"></div>
+    <div id="progressLeft" class="progress-edge" data-glean-id="progress-left"></div>
+
+    <section id="startScreen" class="screen screen--start active" data-glean-id="start-screen">
+      <div class="start-card" data-glean-id="start-card">
+        <img class="brand-logo" src="logo.png" alt="The Sweets" data-glean-id="start-logo">
+        <div class="event-chip" data-glean-id="event-chip">Running Event Photo Booth</div>
+        <h1 class="hero-title" data-glean-id="hero-title">Photo Booth Running Event</h1>
+        <p class="hero-subtitle" data-glean-id="hero-subtitle">Sweet moments in motion</p>
+        <p class="event-chip" data-glean-id="event-details">Elite Fitness Kediri&nbsp; • &nbsp;13/09/26</p>
+        <ul class="intro-list" data-glean-id="session-instructions">
+          <li><span class="instruction-icon" aria-hidden="true">3</span><span>Ambil 3 foto bersama temanmu</span></li>
+          <li><span class="instruction-icon" aria-hidden="true">↻</span><span>Bisa coba lagi maksimal 2x</span></li>
+          <li><span class="instruction-icon" aria-hidden="true">QR</span><span>Setelah selesai, scan QR untuk download foto</span></li>
+          <li><span class="instruction-icon" aria-hidden="true">30</span><span>Pembelian minimal 30Rb GRATIS 1x sesi</span></li>
+          <li><span class="instruction-icon" aria-hidden="true">2m</span><span>Per sesi maksimal 2 menit</span></li>
+        </ul>
+        <button id="startBtn" class="primary-button" type="button" data-glean-id="start-button">Lanjut</button>
+        <p class="strip-details" data-glean-id="social-handle">@thesweetkediri</p>
+      </div>
+    </section>
+
+    <section id="instructionScreen" class="screen screen--instruction" data-glean-id="instruction-screen">
+      <div class="instruction-card" data-glean-id="instruction-card">
+        <img class="brand-logo brand-logo--small" src="logo.png" alt="The Sweets" data-glean-id="instruction-logo">
+        <h2 class="section-title" data-glean-id="instruction-title">Cara Foto</h2>
+        <p class="instruction-copy" data-glean-id="instruction-copy">Kamera akan mulai otomatis. Setiap foto memiliki countdown 7 detik. Siapkan pose terbaikmu dan nikmati momen larinya.</p>
+        <div class="preview-frame" data-glean-id="instruction-preview-frame"><video id="instructionPreview" autoplay playsinline muted aria-label="Camera preview"></video></div>
+        <button id="beginSessionBtn" class="primary-button" type="button" data-glean-id="begin-session-button">Mulai Sesi</button>
+      </div>
+    </section>
+
+    <section id="cameraScreen" class="screen screen--camera" data-glean-id="camera-screen">
+      <div class="camera-shell" data-glean-id="camera-shell">
+        <header class="camera-header" data-glean-id="camera-header">
+          <img class="brand-logo" src="logo.png" alt="The Sweets" data-glean-id="camera-logo">
+          <div class="event-meta" data-glean-id="camera-event-meta">Elite Fitness Kediri<br>13/09/26</div>
+        </header>
+        <div class="camera-grid" data-glean-id="camera-grid">
+          <div class="camera-panel" data-glean-id="camera-panel">
+            <div class="camera-frame" data-glean-id="camera-frame"><video id="video" autoplay playsinline muted aria-label="Camera"></video><div id="countdown" data-glean-id="countdown"></div></div>
+            <div class="camera-controls" data-glean-id="camera-controls">
+              <button id="retakeBtn" class="secondary-button" type="button" data-glean-id="retake-button">Coba Lagi (2)</button>
+              <button id="printBtn" class="primary-button" type="button" data-glean-id="print-button">Cetak / QR</button>
+              <button id="stopBtn" class="danger-button" type="button" data-glean-id="stop-button">Berhenti</button>
+            </div>
+          </div>
+          <aside class="photo-strip" id="strip" data-glean-id="photo-strip-preview">
+            <img class="strip-brand" src="logo.png" alt="The Sweets" data-glean-id="strip-logo">
+            <h2 class="strip-title">RUN • SMILE • REPEAT</h2>
+            <p class="strip-meta"><span id="sessionCode"></span><br><span id="datetime"></span></p>
+            <div id="photos" data-glean-id="captured-photos"></div>
+            <footer class="strip-footer" data-glean-id="strip-footer">
+              <p class="strip-slogan">Sweet moments in motion</p>
+              <p class="strip-details">@thesweetkediri<br>Elite Fitness Kediri<br>13/09/26</p>
+            </footer>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section id="qrScreen" class="screen screen--qr" data-glean-id="qr-screen">
+      <div class="qr-card" data-glean-id="qr-card">
+        <img class="brand-logo brand-logo--small" src="logo.png" alt="The Sweets" data-glean-id="qr-logo">
+        <h2 class="section-title" data-glean-id="qr-title">Scan untuk Download</h2>
+        <canvas id="qrCanvas" data-glean-id="qr-canvas"></canvas>
+        <p id="qrStatus" data-glean-id="qr-status">Menyiapkan link download...</p>
+        <a id="downloadLink" target="_blank" rel="noopener" data-glean-id="download-link"></a>
+        <p class="qr-hint" data-glean-id="qr-hint">Layar akan kembali ke awal otomatis.</p>
+        <button id="closeQrBtn" class="primary-button" type="button" data-glean-id="close-qr-button">Kembali ke awal</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+  <script>
+const SUPABASE_URL = "https://ayalafmqetfunliexrng.supabase.co"
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5YWxhZm1xZXRmdW5saWV4cm5nIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyNDM3MjMsImV4cCI6MjA5NzgxOTcyM30.hbBHLllj5eJLFSkK-CIb32Zxu1a4oitTPqZ-81fMg-U"
+const BUCKET_NAME = "Photobooth"
+const EVENT_LOCATION = "Elite Fitness Kediri"
+const EVENT_DATE = "13/09/26"
+const SESSION_DURATION = 120000
+const PHOTO_DELAY_SECONDS = 7
+const MAX_PHOTOS = 3
+const MAX_RETAKES = 2
+const QR_TIMEOUT_MS = 60000
+const EXPORT_WIDTH = 1200
+const EXPORT_PADDING = 68
+const EXPORT_GAP = 26
+
+const $ = id => document.getElementById(id)
+const video = $("video")
+const instructionPreview = $("instructionPreview")
+const photosContainer = $("photos")
+const countdownEl = $("countdown")
+const retakeBtn = $("retakeBtn")
+const sessionCodeEl = $("sessionCode")
+const dateTimeEl = $("datetime")
+const qrCanvas = $("qrCanvas")
+const qrStatus = $("qrStatus")
+const downloadLink = $("downloadLink")
+const startBtn = $("startBtn")
+
+const supabaseClient = window.supabase?.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+
+let cameraStream = null
+let animationFrame = null
+let sessionStart = null
+let capturing = false
+let sessionActive = false
+let isUploading = false
+let retakesLeft = MAX_RETAKES
+let capturedPhotos = []
+let currentSessionCode = ""
+let currentCaptureTime = ""
+let qrCloseTimer = null
+
+const captions = [
+  "Sweet moments in motion",
+  "Run, smile, repeat",
+  "Good vibes, great strides",
+  "Making memories one step at a time"
+]
+
+function showScreen(id) {
+  document.querySelectorAll(".screen").forEach(screen => screen.classList.remove("active"))
+  $(id)?.classList.add("active")
+}
+
+function generateSessionCode() {
+  return `TS-${Date.now().toString().slice(-6)}`
+}
+
+function updateSessionMeta() {
+  const now = new Date()
+  const hh = String(now.getHours()).padStart(2, "0")
+  const mm = String(now.getMinutes()).padStart(2, "0")
+  currentCaptureTime = `${hh}:${mm}`
+  currentSessionCode = generateSessionCode()
+  if (sessionCodeEl) sessionCodeEl.textContent = currentSessionCode
+  if (dateTimeEl) dateTimeEl.textContent = `${EVENT_DATE} | ${currentCaptureTime}`
+}
+
+function updateRetakeUI() {
+  if (retakeBtn) retakeBtn.textContent = `Coba Lagi (${retakesLeft})`
+}
+
+function resetProgress() {
+  ;["progressTop", "progressRight", "progressBottom", "progressLeft"].forEach(id => {
+    const el = $(id)
+    if (!el) return
+    el.style.width = "0%"
+    el.style.height = "0%"
+    el.style.opacity = "1"
+  })
+}
+
+function updateProgress(elapsed) {
+  const percent = Math.min(100, (elapsed / SESSION_DURATION) * 100)
+  const top = $("progressTop"), right = $("progressRight"), bottom = $("progressBottom"), left = $("progressLeft")
+  ;[top, right, bottom, left].forEach(el => { if (el) { el.style.width = "0%"; el.style.height = "0%" } })
+  if (percent <= 25) top.style.width = `${percent * 4}%`
+  else if (percent <= 50) { top.style.width = "100%"; right.style.height = `${(percent - 25) * 4}%` }
+  else if (percent <= 75) { top.style.width = "100%"; right.style.height = "100%"; bottom.style.width = `${(percent - 50) * 4}%` }
+  else { top.style.width = "100%"; right.style.height = "100%"; bottom.style.width = "100%"; left.style.height = `${(percent - 75) * 4}%` }
+  const pulse = percent > 90 ? (Math.sin(Date.now() / 100) > 0 ? "1" : ".35") : "1"
+  ;[top, right, bottom, left].forEach(el => { if (el) el.style.opacity = pulse })
+}
+
+function runSessionTimer() {
+  const elapsed = Date.now() - sessionStart
+  updateProgress(elapsed)
+  if (elapsed >= SESSION_DURATION) {
+    stopSessionForce()
+    alert("Waktu sesi habis")
+    return
+  }
+  animationFrame = requestAnimationFrame(runSessionTimer)
+}
+
+async function getCameraStream() {
+  if (cameraStream) return cameraStream
+  cameraStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+  return cameraStream
+}
+
+function stopCameraStream() {
+  if (cameraStream) cameraStream.getTracks().forEach(track => track.stop())
+  cameraStream = null
+  if (video) video.srcObject = null
+  if (instructionPreview) instructionPreview.srcObject = null
+}
+
+async function startInstructionPreview() {
+  try {
+    const stream = await getCameraStream()
+    instructionPreview.srcObject = stream
+    await instructionPreview.play()
+  } catch (error) {
+    console.warn("Camera preview unavailable", error)
+  }
+}
+
+function stopInstructionPreview() {
+  if (!instructionPreview) return
+  instructionPreview.pause()
+  instructionPreview.srcObject = null
+}
+
+async function startMainPreview() {
+  const stream = await getCameraStream()
+  stopInstructionPreview()
+  video.srcObject = stream
+  await video.play()
+}
+
+async function goInstruction() {
+  showScreen("instructionScreen")
+  await startInstructionPreview()
+}
+
+async function startSession() {
+  try {
+    showScreen("cameraScreen")
+    await startMainPreview()
+    resetSession()
+    sessionStart = Date.now()
+    runSessionTimer()
+    startCapture()
+  } catch (error) {
+    console.error(error)
+    alert("Kamera gagal dibuka. Pastikan izin kamera diizinkan dan halaman dibuka melalui HTTPS atau localhost.")
+    showScreen("instructionScreen")
+  }
+}
+
+function renderPhotoPlaceholders() {
+  photosContainer.innerHTML = ""
+  for (let index = 0; index < MAX_PHOTOS; index += 1) {
+    const slot = document.createElement("div")
+    slot.className = "photo-placeholder"
+    slot.dataset.gleanId = `photo-placeholder-${index + 1}`
+    const label = document.createElement("span")
+    label.textContent = `PHOTO ${index + 1}`
+    slot.appendChild(label)
+    photosContainer.appendChild(slot)
+  }
+}
+
+function resetSession() {
+  retakesLeft = MAX_RETAKES
+  capturedPhotos = []
+  capturing = false
+  sessionActive = false
+  renderPhotoPlaceholders()
+  countdownEl.textContent = ""
+  updateRetakeUI()
+  updateSessionMeta()
+  resetProgress()
+}
+
+function countdown(seconds) {
+  return new Promise(resolve => {
+    let remaining = seconds
+    countdownEl.textContent = remaining
+    const timer = setInterval(() => {
+      if (!sessionActive) {
+        clearInterval(timer)
+        countdownEl.textContent = ""
+        resolve()
+        return
+      }
+      remaining -= 1
+      countdownEl.textContent = remaining > 0 ? remaining : ""
+      if (remaining <= 0) {
+        clearInterval(timer)
+        resolve()
+      }
+    }, 1000)
+  })
+}
+
+function flashScreen() {
+  const flash = document.createElement("div")
+  flash.className = "camera-flash"
+  Object.assign(flash.style, { position: "fixed", inset: "0", zIndex: "9999", background: "#fff" })
+  document.body.appendChild(flash)
+  setTimeout(() => flash.remove(), 120)
+}
+
+function appendPhoto(src) {
+  if (capturedPhotos.length === 1) photosContainer.innerHTML = ""
+  const image = document.createElement("img")
+  image.src = src
+  image.alt = "Captured running-event photo"
+  image.dataset.gleanId = `captured-photo-${capturedPhotos.length}`
+  photosContainer.appendChild(image)
+}
+
+async function captureSinglePhoto() {
+  const width = video.videoWidth || 1920
+  const height = video.videoHeight || 1080
+  const canvas = document.createElement("canvas")
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext("2d")
+  ctx.imageSmoothingEnabled = true
+  ctx.imageSmoothingQuality = "high"
+  ctx.translate(width, 0)
+  ctx.scale(-1, 1)
+  ctx.drawImage(video, 0, 0, width, height)
+  return canvas.toDataURL("image/jpeg", .94)
+}
+
+async function startCapture() {
+  if (capturing || !video.videoWidth) return
+  capturing = true
+  sessionActive = true
+  renderPhotoPlaceholders()
+  capturedPhotos = []
+  for (let index = 0; index < MAX_PHOTOS; index += 1) {
+    if (!sessionActive) break
+    await countdown(PHOTO_DELAY_SECONDS)
+    if (!sessionActive) break
+    const src = await captureSinglePhoto()
+    capturedPhotos.push(src)
+    appendPhoto(src)
+    flashScreen()
+  }
+  capturing = false
+}
+
+function retake() {
+  if (capturing) return
+  if (retakesLeft <= 0) return alert("Kesempatan coba lagi sudah habis")
+  retakesLeft -= 1
+  updateRetakeUI()
+  startCapture()
+}
+
+function stopSession() {
+  if (confirm("Yakin berhenti dari sesi ini?")) stopSessionForce()
+}
+
+function stopSessionForce() {
+  sessionActive = false
+  capturing = false
+  countdownEl.textContent = ""
+  cancelAnimationFrame(animationFrame)
+  resetProgress()
+  stopCameraStream()
+  showScreen("startScreen")
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const image = new Image()
+    image.onload = () => resolve(image)
+    image.onerror = reject
+    image.src = src
+  })
+}
+
+function drawCover(ctx, image, width, height) {
+  const scale = Math.max(width / image.width, height / image.height)
+  const drawWidth = image.width * scale
+  const drawHeight = image.height * scale
+  const x = (width - drawWidth) / 2
+  const y = (height - drawHeight) / 2
+  ctx.drawImage(image, x, y, drawWidth, drawHeight)
+}
+
+function drawRoundedImage(ctx, image, x, y, width, height, radius) {
+  ctx.save()
+  ctx.beginPath()
+  if (ctx.roundRect) ctx.roundRect(x, y, width, height, radius)
+  else {
+    ctx.moveTo(x + radius, y)
+    ctx.arcTo(x + width, y, x + width, y + height, radius)
+    ctx.arcTo(x + width, y + height, x, y + height, radius)
+    ctx.arcTo(x, y + height, x, y, radius)
+    ctx.arcTo(x, y, x + width, y, radius)
+  }
+  ctx.clip()
+  ctx.drawImage(image, x, y, width, height)
+  ctx.restore()
+  ctx.save()
+  ctx.strokeStyle = "rgba(255,255,255,.95)"
+  ctx.lineWidth = 8
+  ctx.beginPath()
+  if (ctx.roundRect) ctx.roundRect(x, y, width, height, radius)
+  ctx.stroke()
+  ctx.restore()
+}
+
+async function renderStripBlob() {
+  if (capturedPhotos.length !== MAX_PHOTOS) throw new Error("Belum ada 3 foto lengkap")
+  const [background, logo, ...images] = await Promise.all([
+    loadImage("running-event-strip-background.png"),
+    loadImage("logo.png"),
+    ...capturedPhotos.map(loadImage)
+  ])
+  const photoWidth = EXPORT_WIDTH - EXPORT_PADDING * 2
+  const photoHeights = images.map(image => Math.round(photoWidth * (image.height / image.width)))
+  const headerHeight = 300
+  const footerHeight = 350
+  const photosHeight = photoHeights.reduce((sum, height) => sum + height, 0) + EXPORT_GAP * (images.length - 1)
+  const canvas = document.createElement("canvas")
+  canvas.width = EXPORT_WIDTH
+  canvas.height = EXPORT_PADDING * 2 + headerHeight + photosHeight + footerHeight
+  const ctx = canvas.getContext("2d")
+
+  drawCover(ctx, background, canvas.width, canvas.height)
+  ctx.fillStyle = "rgba(255,247,251,.56)"
+  ctx.fillRect(24, 24, canvas.width - 48, canvas.height - 48)
+
+  const logoWidth = 660
+  const logoHeight = logoWidth * (logo.height / logo.width)
+  ctx.save()
+  ctx.filter = "brightness(.52) saturate(.86) contrast(1.10)"
+  ctx.drawImage(logo, (canvas.width - logoWidth) / 2, 58, logoWidth, logoHeight)
+  ctx.restore()
+
+  let y = EXPORT_PADDING + headerHeight
+  ctx.textAlign = "center"
+  ctx.fillStyle = "#b34b7a"
+  ctx.font = "800 48px Trebuchet MS, sans-serif"
+  ctx.fillText("RUN • SMILE • REPEAT", canvas.width / 2, y - 34)
+
+  images.forEach((image, index) => {
+    drawRoundedImage(ctx, image, EXPORT_PADDING, y, photoWidth, photoHeights[index], 24)
+    y += photoHeights[index] + EXPORT_GAP
+  })
+
+  y += 18
+  ctx.fillStyle = "#b34b7a"
+  ctx.font = "italic 42px Georgia, serif"
+  ctx.fillText("Sweet moments in motion", canvas.width / 2, y)
+  y += 74
+  ctx.fillStyle = "#7d2855"
+  ctx.font = "700 32px Trebuchet MS, sans-serif"
+  ctx.fillText("@thesweetkediri", canvas.width / 2, y)
+  y += 48
+  ctx.font = "700 28px Trebuchet MS, sans-serif"
+  ctx.fillText(`${EVENT_LOCATION} • ${EVENT_DATE} | ${currentCaptureTime}`, canvas.width / 2, y)
+  y += 58
+  ctx.font = "italic 30px Georgia, serif"
+  ctx.fillText("Made with love by The Sweets", canvas.width / 2, y)
+
+  return new Promise((resolve, reject) => canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error("Gagal membuat photo strip")), "image/png"))
+}
+
+async function createSignedUrl(filePath, attempts = 5) {
+  let lastError = null
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const { data, error } = await supabaseClient.storage.from(BUCKET_NAME).createSignedUrl(filePath, 60 * 30)
+    if (!error && data?.signedUrl) return data.signedUrl
+    lastError = error
+    await new Promise(resolve => setTimeout(resolve, 500 * (attempt + 1)))
+  }
+  throw lastError || new Error("Gagal membuat link download")
+}
+
+async function uploadStrip(blob) {
+  if (!supabaseClient) throw new Error("Supabase belum tersedia")
+  const filePath = `strips/${new Date().toISOString().slice(0, 10)}/${currentSessionCode}-${Date.now()}.png`
+  const { error } = await supabaseClient.storage.from(BUCKET_NAME).upload(filePath, blob, { contentType: "image/png", upsert: false })
+  if (error) throw error
+  return createSignedUrl(filePath)
+}
+
+async function showQRCode(url) {
+  showScreen("qrScreen")
+  qrStatus.textContent = "Scan QR untuk download foto"
+  downloadLink.href = url
+  downloadLink.textContent = "Buka foto"
+  qrCanvas.width = 280
+  qrCanvas.height = 280
+  if (window.QRCode?.toCanvas) {
+    await QRCode.toCanvas(qrCanvas, url, { width: 280, margin: 2, color: { dark: "#351a2b", light: "#ffffff" } })
+  } else {
+    qrStatus.textContent = "QR belum tersedia. Gunakan tombol Buka foto."
+  }
+  clearTimeout(qrCloseTimer)
+  qrCloseTimer = setTimeout(closeQRSession, QR_TIMEOUT_MS)
+}
+
+function closeQRSession() {
+  clearTimeout(qrCloseTimer)
+  stopSessionForce()
+  const ctx = qrCanvas.getContext("2d")
+  ctx?.clearRect(0, 0, qrCanvas.width, qrCanvas.height)
+  downloadLink.removeAttribute("href")
+  downloadLink.textContent = ""
+  qrStatus.textContent = ""
+}
+
+async function printStrip() {
+  if (isUploading) return
+  if (capturedPhotos.length !== MAX_PHOTOS) return alert("Tunggu sampai 3 foto selesai diambil dulu ya.")
+  if (!confirm("Sudah puas dengan foto kamu?")) return
+  try {
+    isUploading = true
+    qrStatus.textContent = "Menyiapkan QR..."
+    const blob = await renderStripBlob()
+    const signedUrl = await uploadStrip(blob)
+    stopCameraStream()
+    await showQRCode(signedUrl)
+  } catch (error) {
+    console.error(error)
+    alert(`Gagal upload foto: ${error?.message || "Coba lagi"}`)
+  } finally {
+    isUploading = false
+  }
+}
+
+startBtn?.addEventListener("click", goInstruction)
+$("beginSessionBtn")?.addEventListener("click", startSession)
+retakeBtn?.addEventListener("click", retake)
+$("printBtn")?.addEventListener("click", printStrip)
+$("stopBtn")?.addEventListener("click", stopSession)
+$("closeQrBtn")?.addEventListener("click", closeQRSession)
+
+window.addEventListener("beforeunload", stopCameraStream)
+
+  </script>
+</body>
+</html>
