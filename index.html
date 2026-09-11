@@ -670,7 +670,7 @@ async function renderStripBlob() {
   const logoWidth = 660
   const logoHeight = logoWidth * (logo.height / logo.width)
   ctx.save()
-  ctx.filter = "brightness(.52) saturate(.86) contrast(1.10)"
+  ctx.filter = "none";
   ctx.drawImage(logo, (canvas.width - logoWidth) / 2, 58, logoWidth, logoHeight)
   ctx.restore()
 
